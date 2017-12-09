@@ -93,8 +93,13 @@ def create_device(owner, device_id):
     user = db.users.find_one({'username': owner})
     db.devices.insert({'owner': user['_id'], 'device_id': device_id, 'last_online': None})
 
+def get_devices(owner):
+    user = db.users.find_one({'username': owner})
+    return db.devices.find({'owner': user['_id']}, {'_id': 0, 'owner': 0})
+
 def check_device_exists(params):
     return db.devices.find(params).count() > 0 if True else False
+
 
 def get_device_slot(owner):
     user = db.users.find_one({'username': owner})

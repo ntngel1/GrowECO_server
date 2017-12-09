@@ -43,3 +43,9 @@ def device_create_slot():
 @app.route('/device/attach/<device_id>')
 def device_attach(device_id):
     return controllers.device_attach(device_id)
+
+
+@app.route('/device/get_devices')
+@models.auth.login_required
+def get_devices():
+    return controllers.get_devices(models.auth.username())

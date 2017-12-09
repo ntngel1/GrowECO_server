@@ -3,6 +3,7 @@ from server import models
 from server import exceptions
 import datetime
 import secrets
+from bson.json_util import dumps
 
 def register_account(req_data):
     params = ['name', 'username', 'password', 'email']
@@ -54,17 +55,26 @@ def get_sensors(username, device_id):
 def update_sensors(username, device_id, data):
     return do_with_handling(models.update_sensors_data, username, device_id, data)
 
+
 def device_create_slot(username):
     slot = models.get_device_slot(username)
     return jsonify({'identifier': slot['device_id']})
 
+
 def device_attach(device_id):
     new_id = str(secrets.token_hex(16))
-    ex = do_with_handling(models.update_device, device_id, {'device_id': new_id, 'last_online': datetime.datetime.utcnow()})
+    ex = do_with_handling(models.update_device, device_id,
+                          {'device_id': new_id, 'last_online': datetime.datetime.utcnow()})
     if ex[1] == 400:
         return ex
     else:
         return jsonify({'identifier': new_id})
+
+
+def get_devices(username):
+    devices = models.get_devices(username)
+    return jsonify(list(devices))
+
 
 def do_with_handling(f, *args):
     try:
