@@ -1,62 +1,73 @@
 from flask import jsonify
 from server import models
 from server import exceptions
-
+import datetime
+import secrets
 
 def register_account(req_data):
     params = ['name', 'username', 'password', 'email']
-    newUserData = {}
+    new_user_data = {}
 
-    errors = {}
-    hasErrors = False
+    errors = dict()
 
-    if req_data is None:
-        return jsonify("Registration data is missing")
+    if not req_data:
+        return exceptions.ServerErrorException(exceptions.ErrorCode.DATA_NOT_SUITABLE,
+                                               message="Данные отсутствуют!").get_json(), 400
 
     for param in params:
-        try:
-            newUserData[param] = req_data[param]
-        except KeyError:
-            errors[param] = "Parameter %s can't be null" % param
-            hasErrors = True
+        if param in req_data:
+            new_user_data[param] = req_data[param]
+        else:
+            errors[param] = "Значение не может отсутствовать!"
 
-    if not hasErrors:
-        return jsonify(models.create_user(newUserData))
+    if errors:
+        return exceptions.ServerErrorException(exceptions.ErrorCode.DATA_NOT_SUITABLE,
+                                               errors, "Некоторые данные отсутствуют!").get_json(), 400
     else:
-        return jsonify(errors)
+        return do_with_handling(models.create_user, new_user_data)
 
 
 def get_account(username):
-    return jsonify(models.get_user(username))
+    return do_with_handling(models.get_user, username)
 
 
 def update_account(username, req_data):
     params = ['name', 'username', 'password', 'email']
-    new_user_data = {}
+    new_user_data = dict()
 
-    if req_data is None:
-        return jsonify("Update data is missing")
-
+    if not req_data:
+        return exceptions.ServerErrorException(exceptions.ErrorCode.DATA_NOT_SUITABLE,
+                                               message="Данные отсутствуют!").get_json()
     for param in params:
         try:
             new_user_data[param] = req_data[param]
         except KeyError:
             continue
 
-    return jsonify(models.update_user(username, new_user_data))
+    return do_with_handling(models.update_user, username, new_user_data)
 
 
-def get_sensors(username, id):
+def get_sensors(username, device_id):
+    return do_with_handling(models.get_sensors_data, username, device_id)
+
+
+def update_sensors(username, device_id, data):
+    return do_with_handling(models.update_sensors_data, username, device_id, data)
+
+def device_create_slot(username):
+    slot = models.get_device_slot(username)
+    return jsonify({'identifier': slot['device_id']})
+
+def device_attach(device_id):
+    new_id = str(secrets.token_hex(16))
+    ex = do_with_handling(models.update_device, device_id, {'device_id': new_id, 'last_online': datetime.datetime.utcnow()})
+    if ex[1] == 400:
+        return ex
+    else:
+        return jsonify({'identifier': new_id})
+
+def do_with_handling(f, *args):
     try:
-        data = models.get_sensors_data(username, id)
-    except Exception as ex:
-        return jsonify(str(ex)), 400
-
-    return jsonify(data)
-
-
-def update_sensors(username, id, data):
-    try:
-        return jsonify(models.update_sensors_data(username, id, data))
-    except Exception as ex:
-        return jsonify(str(ex)), 400
+        return jsonify(f(*args)), 200
+    except exceptions.ServerErrorException as e:
+        return e.get_json(), 400

@@ -1,6 +1,9 @@
-from flask import jsonify
+import base64
+
 from flask_httpauth import HTTPBasicAuth
 from pymongo import MongoClient
+import datetime
+import secrets
 
 import config
 from server import exceptions
@@ -8,6 +11,7 @@ from server import exceptions
 auth = HTTPBasicAuth()
 db_client = MongoClient(config.DB_HOST, config.DB_PORT)
 db = db_client.GrowECO
+
 
 @auth.verify_password
 def verify_pw(username, password):
@@ -22,59 +26,89 @@ def verify_pw(username, password):
     else:
         return False
 
-def create_user(userData):
-    hasErrors = False
-    errors = {}
 
-    if db.users.find({'username': userData['username']}).count() > 0:
-        errors['username'] = "Username is already in use"
-        hasErrors = True
+def create_user(user_data):
+    errors = dict()
 
-    if db.users.find({'email': userData['email']}).count() > 0:
-        errors['email'] = "Email is already in use!"
-        hasErrors = True
+    if db.users.find({'username': user_data['username']}).count() > 0:
+        errors['username'] = "Данный никнейм уже используется!"
 
-    if hasErrors:
-        return errors
+    if db.users.find({'email': user_data['email']}).count() > 0:
+        errors['email'] = "Данный email уже используется!"
+
+    if errors:
+        raise exceptions.ServerErrorException(exceptions.ErrorCode.DATA_NOT_SUITABLE, errors, "Неверные данные!")
     else:
-        db.users.insert(userData)
+        db.users.insert(user_data)
         return True
 
+
 def get_user(username):
-    user = db.users.find_one({'username': username}, {'_id':0, 'password': 0})
+    user = db.users.find_one({'username': username}, {'_id': 0, 'password': 0})
     return user
+
 
 def update_user(username, update_data):
     db.users.update({'username': username},
                     {'$set': update_data})
     return True
 
-def check_device_permissions(username, device_id):
+
+def check_device_owner(username, device_id):
     user = db.users.find_one({'username': username})
-    device = db.devices.find_one({'device_id': int(device_id)})
+    device = db.devices.find_one({'device_id': device_id})
     if device is None:
-        raise exceptions.DeviceException('Device with this id doesn\'t exist! Please register the device')
+        raise exceptions.ServerErrorException(exceptions.ErrorCode.DEVICE_NOT_REGISTERED,
+                                              message="Данное устройство не зарегистрировано!")
     if device['owner'] == user['_id']:
         return True
     else:
-        raise exceptions.OwnerException('You are not owner of this device')
+        raise exceptions.ServerErrorException(exceptions.ErrorCode.NOT_OWNER,
+                                              message="Вы не являетесь владельцем данного устройства!")
 
-def get_sensors_data(username, id):
-    if check_device_permissions(username, id):
-        device = db.devices.find_one({'device_id': int(id)})
+
+def get_sensors_data(username, device_id):
+    if check_device_owner(username, device_id):
+        device = db.devices.find_one({'device_id': device_id})
         sensors = db.sensors.find_one({'device_id': device['_id']}, {'_id': 0, 'device_id': 0})
         return sensors
 
-def update_sensors_data(username, id, data):
-    if check_device_permissions(username, id):
+
+def update_sensors_data(username, device_id, data):
+    if check_device_owner(username, device_id):
         fields = ['air_humidity', 'air_temperature', 'ground_humidity', 'ground_temperature']
         new_data = dict()
         for field in fields:
-            try:
+            if field in data:
                 new_data[field] = data[field]
-            except KeyError:
+            else:
                 new_data[field] = 0
-        device = db.devices.find_one({'device_id': int(id)})
+        device = db.devices.find_one({'device_id': device_id})
         db.sensors.update({'device_id': device['_id']},
                           {'$set': new_data})
         return True
+
+
+def create_device(owner, device_id):
+    user = db.users.find_one({'username': owner})
+    db.devices.insert({'owner': user['_id'], 'device_id': device_id, 'last_online': None})
+
+def check_device_exists(params):
+    return db.devices.find(params).count() > 0 if True else False
+
+def get_device_slot(owner):
+    user = db.users.find_one({'username': owner})
+    device = db.devices.find_one({'owner': user['_id'], 'last_online': None})
+    if device:
+        return device
+    else:
+        create_device(owner, str(secrets.token_hex(4)))
+        return db.devices.find_one({'owner': user['_id'], 'last_online': None})
+
+
+def update_device(device_id, data):
+    if check_device_exists({'device_id': device_id}):
+        db.devices.update({'device_id': device_id}, {'$set': data})
+    else:
+        raise exceptions.ServerErrorException(exceptions.ErrorCode.INVALID_DEVICE_TOKEN,
+                                              message="Недействительный токен устройства!")

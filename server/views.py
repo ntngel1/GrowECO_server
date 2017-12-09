@@ -1,5 +1,4 @@
 from flask import request
-from flask import jsonify
 
 from server import app
 from server import controllers
@@ -22,12 +21,25 @@ def get_account():
 def update_account():
     return controllers.update_account(models.auth.username(), request.get_json())
 
-@app.route('/sensors/get/<id>')
-@models.auth.login_required
-def get_sensors(id):
-    return controllers.get_sensors(models.auth.username(), id)
 
-@app.route('/sensors/update/<id>', methods=['PUT'])
+@app.route('/sensors/get/<device_id>')
 @models.auth.login_required
-def update_sensors(id):
-    return controllers.update_sensors(models.auth.username(), id, request.get_json())
+def get_sensors(device_id):
+    return controllers.get_sensors(models.auth.username(), device_id)
+
+
+@app.route('/sensors/update/<device_id>', methods=['PUT'])
+@models.auth.login_required
+def update_sensors(device_id):
+    return controllers.update_sensors(models.auth.username(), device_id, request.get_json())
+
+
+@app.route('/device/create_slot')
+@models.auth.login_required
+def device_create_slot():
+    return controllers.device_create_slot(models.auth.username())
+
+
+@app.route('/device/attach/<device_id>')
+def device_attach(device_id):
+    return controllers.device_attach(device_id)
