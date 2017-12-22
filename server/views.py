@@ -49,3 +49,24 @@ def device_attach(device_id):
 @models.auth.login_required
 def get_devices():
     return controllers.get_devices(models.auth.username())
+
+
+@app.route('/device/update/<device_id>', methods=['PUT'])
+def update_device(device_id):
+    return controllers.update_device(device_id, request.get_json())
+
+
+@app.route('/device/get_last')
+@models.auth.login_required
+def get_last_device():
+    return controllers.get_devices(models.auth.username(), last=True)
+
+
+@app.route('/actions/add/<token>', methods=['POST'])
+def add_action(token):
+    return controllers.add_action(token, request.get_json())
+
+
+@app.route('/actions/get/<token>')
+def get_action(token):
+    return controllers.get_action(token)

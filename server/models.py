@@ -84,6 +84,9 @@ def update_sensors_data(username, device_id, data):
             else:
                 new_data[field] = 0
         device = db.devices.find_one({'device_id': device_id})
+
+        if db.sensors.find({'device_id': device['_id']}).count() == 0:
+            db.sensors.insert({'device_id': device['_id']})
         db.sensors.update({'device_id': device['_id']},
                           {'$set': new_data})
         return True
@@ -93,9 +96,11 @@ def create_device(owner, device_id):
     user = db.users.find_one({'username': owner})
     db.devices.insert({'owner': user['_id'], 'device_id': device_id, 'last_online': None})
 
+
 def get_devices(owner):
     user = db.users.find_one({'username': owner})
-    return db.devices.find({'owner': user['_id']}, {'_id': 0, 'owner': 0})
+    return db.devices.find({'owner': user['_id'], 'last_online': {'$ne': None}}, {'_id': 0, 'owner': 0})
+
 
 def check_device_exists(params):
     return db.devices.find(params).count() > 0 if True else False
@@ -114,6 +119,34 @@ def get_device_slot(owner):
 def update_device(device_id, data):
     if check_device_exists({'device_id': device_id}):
         db.devices.update({'device_id': device_id}, {'$set': data})
+        return True
+    else:
+        raise exceptions.ServerErrorException(exceptions.ErrorCode.INVALID_DEVICE_TOKEN,
+                                              message="Недействительный токен устройства!")
+
+
+def add_action(token, data):
+    if check_device_exists({'device_id': token}):
+        actions = db.actions.find_one({'device_id': token})
+        if not actions:
+            actions = db.actions.insert_one({'device_id': token, 'actions': []})
+
+        db.actions.update_one({'device_id': token}, {'$push': {'actions': data}})
+        return True
+    else:
+        raise exceptions.ServerErrorException(exceptions.ErrorCode.INVALID_DEVICE_TOKEN,
+                                              message="Недействительный токен устройства!")
+
+
+def get_action(token):
+    if check_device_exists({'device_id':token}):
+        actions = db.actions.find_one({'device_id': token})
+        if not actions or len(actions['actions']) == 0:
+            return None
+
+        action = dict(actions['actions'][0])
+        db.actions.update_one({'device_id':token}, {'$pop': {'actions': -1}})
+        return action
     else:
         raise exceptions.ServerErrorException(exceptions.ErrorCode.INVALID_DEVICE_TOKEN,
                                               message="Недействительный токен устройства!")

@@ -1,6 +1,7 @@
 from enum import IntEnum
 from flask import jsonify
 
+
 class ErrorCode(IntEnum):
     NOT_OWNER = 0
     DEVICE_NOT_REGISTERED = 1

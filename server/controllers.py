@@ -5,6 +5,7 @@ import datetime
 import secrets
 from bson.json_util import dumps
 
+
 def register_account(req_data):
     params = ['name', 'username', 'password', 'email']
     new_user_data = {}
@@ -58,22 +59,34 @@ def update_sensors(username, device_id, data):
 
 def device_create_slot(username):
     slot = models.get_device_slot(username)
-    return jsonify({'identifier': slot['device_id']})
+    return jsonify({'token': slot['device_id']})
 
 
 def device_attach(device_id):
     new_id = str(secrets.token_hex(16))
     ex = do_with_handling(models.update_device, device_id,
-                          {'device_id': new_id, 'last_online': datetime.datetime.utcnow()})
+                          {'device_id': new_id, 'last_online': datetime.datetime.utcnow(), 'name': "GrowECO"})
     if ex[1] == 400:
         return ex
     else:
-        return jsonify({'identifier': new_id})
+        return jsonify({'token': new_id})
 
 
-def get_devices(username):
+def get_devices(username, last=False):
     devices = models.get_devices(username)
-    return jsonify(list(devices))
+    if not last:
+        return jsonify(list(devices))
+    else:
+        return jsonify(list(devices)[-1])
+
+
+def update_device(device_id, data):
+    fields = ['name']
+    new_data = dict()
+    for field in fields:
+        if field in data:
+            new_data[field] = data[field]
+    return do_with_handling(models.update_device, device_id, new_data)
 
 
 def do_with_handling(f, *args):
@@ -81,3 +94,15 @@ def do_with_handling(f, *args):
         return jsonify(f(*args)), 200
     except exceptions.ServerErrorException as e:
         return e.get_json(), 400
+
+
+def add_action(token, data):
+    return do_with_handling(models.add_action, token, data)
+
+
+def get_action(token):
+    try:
+        action = models.get_action(token)
+    except exceptions.ServerErrorException as e:
+        return e.get_json(), 400
+    return jsonify(action)
