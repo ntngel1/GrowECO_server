@@ -1,108 +1,133 @@
 from flask import jsonify
-from server import models
-from server import exceptions
 import datetime
 import secrets
-from bson.json_util import dumps
+
+from server import models
+from server.exceptions import *
+from server.datapreprocessor import *
+
+ERROR_CODE = 400
 
 
-def register_account(req_data):
-    params = ['name', 'username', 'password', 'email']
-    new_user_data = {}
-
-    errors = dict()
-
-    if not req_data:
-        return exceptions.ServerErrorException(exceptions.ErrorCode.DATA_NOT_SUITABLE,
-                                               message="Данные отсутствуют!").get_json(), 400
-
-    for param in params:
-        if param in req_data:
-            new_user_data[param] = req_data[param]
-        else:
-            errors[param] = "Значение не может отсутствовать!"
-
-    if errors:
-        return exceptions.ServerErrorException(exceptions.ErrorCode.DATA_NOT_SUITABLE,
-                                               errors, "Некоторые данные отсутствуют!").get_json(), 400
+def error_response(data=None):
+    if data is None:
+        return jsonify({'success': False}), ERROR_CODE
     else:
-        return do_with_handling(models.create_user, new_user_data)
+        data.update({'success': False})
+        return jsonify(data), ERROR_CODE
 
 
-def get_account(username):
-    return do_with_handling(models.get_user, username)
-
-
-def update_account(username, req_data):
-    params = ['name', 'username', 'password', 'email']
-    new_user_data = dict()
-
-    if not req_data:
-        return exceptions.ServerErrorException(exceptions.ErrorCode.DATA_NOT_SUITABLE,
-                                               message="Данные отсутствуют!").get_json()
-    for param in params:
-        try:
-            new_user_data[param] = req_data[param]
-        except KeyError:
-            continue
-
-    return do_with_handling(models.update_user, username, new_user_data)
-
-
-def get_sensors(username, device_id):
-    return do_with_handling(models.get_sensors_data, username, device_id)
-
-
-def update_sensors(username, device_id, data):
-    return do_with_handling(models.update_sensors_data, username, device_id, data)
-
-
-def device_create_slot(username):
-    slot = models.get_device_slot(username)
-    return jsonify({'token': slot['device_id']})
-
-
-def device_attach(device_id):
-    new_id = str(secrets.token_hex(16))
-    ex = do_with_handling(models.update_device, device_id,
-                          {'device_id': new_id, 'last_online': datetime.datetime.utcnow(), 'name': "GrowECO"})
-    if ex[1] == 400:
-        return ex
+def success_response(data=None):
+    if data is None:
+        return jsonify({'success': True})
     else:
-        return jsonify({'token': new_id})
+        data.update({'success': True})
+        return jsonify(data)
 
 
-def get_devices(username, last=False):
-    devices = models.get_devices(username)
-    if not last:
-        return jsonify(list(devices))
-    else:
-        return jsonify(list(devices)[-1])
-
-
-def update_device(device_id, data):
-    fields = ['name']
-    new_data = dict()
-    for field in fields:
-        if field in data:
-            new_data[field] = data[field]
-    return do_with_handling(models.update_device, device_id, new_data)
-
-
-def do_with_handling(f, *args):
+def create_user(request_data):
     try:
-        return jsonify(f(*args)), 200
-    except exceptions.ServerErrorException as e:
-        return e.get_json(), 400
+        registration_data = RequestDataPreprocessor.create_user_data(request_data)
+    except ServerErrorException as e:
+        return error_response(e.get_dict())
+
+    try:
+        models.create_user(registration_data)
+    except ServerErrorException as e:
+        return error_response(e.get_dict())
+
+    return success_response()
 
 
-def add_action(token, data):
-    return do_with_handling(models.add_action, token, data)
+def get_user(username):
+    user = models.get_user(username)
+    response = ResponseDataPreprocessor.get_user_data(user)
+    return success_response(response)
+
+
+def update_user(username, request_data):
+    update_data = RequestDataPreprocessor.update_user_data(request_data)
+    models.update_user(username, update_data)
+    return success_response()
+
+
+def get_sensors(token):
+    try:
+        sensors = models.get_sensors(token)
+    except ServerErrorException as e:
+        return error_response(e.get_dict())
+
+    response = ResponseDataPreprocessor.get_sensors_data(sensors)
+    return success_response(response)
+
+
+def update_sensors(token, request_data):
+    update_data = RequestDataPreprocessor.update_sensors_data(request_data)
+
+    try:
+        models.update_sensors(token, update_data)
+    except ServerErrorException as e:
+        return error_response(e.get_dict())
+
+    return success_response()
+
+
+def get_device_slot(owner):
+    slot = models.get_device_slot(owner)
+    response = ResponseDataPreprocessor.get_device_slot(slot)
+    return success_response(response)
+
+
+def attach_device(token):
+    new_token = str(secrets.token_hex(16))
+
+    try:
+        response = models.update_device(token, {'token': new_token, 'is_attached': True,
+                                                'last_online': datetime.datetime.utcnow()})
+    except ServerErrorException as e:
+        return error_response(e.get_dict())
+
+    response = ResponseDataPreprocessor.attach_device(response)
+
+    return success_response(response)
+
+
+def get_devices(username):
+    devices = models.get_devices(username)
+
+    response = dict()
+    response['devices'] = list()
+    for device in devices:
+        device = ResponseDataPreprocessor.get_device(device)
+        response['devices'].append(device)
+
+    return success_response(response)
+
+
+def update_device(token, data):
+    update_data = RequestDataPreprocessor.update_device_data(data)
+    try:
+        models.update_device(token, update_data)
+    except ServerErrorException as e:
+        return error_response(e.get_dict())
+
+    return success_response()
+'''
+def create_action(token, data):
+   action_data = RequestDataPreprocessor.create_action(data)
+
+   try:
+       models.create_action(token, action_data)
+   except ServerErrorException as e:
+       return error_response(e.get_dict())
+
+   return success_response()
 
 
 def get_action(token):
-    try:
-        action = models.get_action(token)
-    except exceptions.ServerErrorException as e:
-        return e.get_json(), 400
-    return jsonify(action)
+   try:
+       action = models.get_action(token)
+   except exceptions.ServerErrorException as e:
+       return e.get_json(), 400
+   return jsonify(action)
+'''

@@ -1,4 +1,4 @@
 DB_HOST = "localhost"
 DB_PORT = 27017
 
-SERVER_PORT = 5000
+SERVER_PORT = 3000
