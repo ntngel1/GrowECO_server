@@ -1,4 +1,5 @@
-from server import app
 import config
+from server import app
 
-app.run(debug=True, port=config.SERVER_PORT)
+if __name__ == '__main__':
+	app.run()

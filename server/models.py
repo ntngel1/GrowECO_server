@@ -8,8 +8,8 @@ from server.exceptions import *
 from server.schemas import DBSchemas
 
 auth = HTTPBasicAuth()
-db_client = MongoClient(config.DB_HOST, config.DB_PORT)
-db = db_client.GrowECO
+mongodb = MongoClient(config.DB_URI)
+db = mongodb[config.DB_NAME]
 
 @auth.verify_password
 def verify_pw(username, password):

@@ -1,0 +1,5 @@
+*.pyc
+./server/__pycache__/*
+./.idea/*
+./.DS_Store
+./server/.idea/*

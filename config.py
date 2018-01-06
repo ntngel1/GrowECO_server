@@ -1,4 +1,4 @@
-DB_HOST = "localhost"
-DB_PORT = 27017
+import os
 
-SERVER_PORT = 3000
+DB_URI = os.environ.get('MONGODB_URI')
+DB_NAME = os.environ.get('DB_NAME')
