@@ -35,7 +35,7 @@ class RequestDataPreprocessor:
 
     @staticmethod
     def update_sensors_data(json):
-        sensors_fields = ['air_humidity', 'air_temperature', 'ground_humidity', 'ground_temperature']
+        sensors_fields = ['air_humidity', 'air_temperature', 'ground_humidity', 'ground_temperature', 'water']
 
         data = dict()
 
