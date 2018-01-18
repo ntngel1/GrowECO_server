@@ -141,9 +141,9 @@ def create_action(token, data):
 
 
 def get_action(token):
-    if check_device_exists({'device_id': token}):
+    if check_device_exists({'token': token}):
         actions = db.actions.find_one({'device_id': token})
-        if not actions or len(actions['actions']) == 0:
+        if ((not actions) or (len(actions['actions']) == 0)):
             return None
 
         action = dict(actions['actions'][0])
