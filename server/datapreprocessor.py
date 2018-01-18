@@ -85,7 +85,7 @@ class ResponseDataPreprocessor:
 
     @staticmethod
     def get_sensors_data(data):
-        sensors_fields = ['air_humidity', 'air_temperature', 'ground_humidity', 'ground_temperature']
+        sensors_fields = ['air_humidity', 'air_temperature', 'ground_humidity', 'ground_temperature', 'water']
 
         json = dict()
 

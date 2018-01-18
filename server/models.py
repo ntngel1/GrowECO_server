@@ -124,7 +124,7 @@ def update_device(token, data):
     else:
         raise InvalidDeviceTokenException()
 
-'''
+
 def create_action(token, data):
     if not check_device_exists({'token': token}):
         raise InvalidDeviceTokenException()
@@ -150,6 +150,4 @@ def get_action(token):
         db.actions.update_one({'device_id': token}, {'$pop': {'actions': -1}})
         return action
     else:
-        raise exceptions.ServerErrorException(exceptions.ErrorCode.INVALID_DEVICE_TOKEN,
-                                              message="Недействительный токен устройства!")
-'''
+        raise InvalidDeviceTokenException()

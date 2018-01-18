@@ -112,7 +112,7 @@ def update_device(token, data):
         return error_response(e.get_dict())
 
     return success_response()
-'''
+
 def create_action(token, data):
    action_data = RequestDataPreprocessor.create_action(data)
 
@@ -128,6 +128,6 @@ def get_action(token):
    try:
        action = models.get_action(token)
    except exceptions.ServerErrorException as e:
-       return e.get_json(), 400
-   return jsonify(action)
-'''
+       return error_response(e.get_dict())
+   return success_response(action)
+
