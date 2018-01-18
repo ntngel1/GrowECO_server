@@ -149,7 +149,7 @@ def get_action(token):
 
         action = dict()
         action["action"] = actions['actions'][0]
-        db.actions.update_one({'device_id': token}, {'$pop': {'actions': -1}})
+        db.actions.update_one({'device_id': device['_id']}, {'$pop': {'actions': -1}})
         return action
     else:
         raise InvalidDeviceTokenException()
