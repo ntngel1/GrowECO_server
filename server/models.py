@@ -146,7 +146,8 @@ def get_action(token):
         if ((not actions) or (len(actions['actions']) == 0)):
             return None
 
-        action = dict(actions['actions'][0])
+        action = dict()
+        action["action"] = actions['actions'][0]
         db.actions.update_one({'device_id': token}, {'$pop': {'actions': -1}})
         return action
     else:
