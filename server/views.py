@@ -54,12 +54,6 @@ def update_device(token):
     return controllers.update_device(token, request.get_json())
 
 
-@app.route('/device/get_last')
-@models.auth.login_required
-def get_last_device():
-    return controllers.get_devices(models.auth.username(), last=True)
-
-
 @app.route('/actions/create/<token>', methods=['POST'])
 def create_action(token):
     return controllers.create_action(token, request.get_json())

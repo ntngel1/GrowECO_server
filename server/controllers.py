@@ -127,7 +127,7 @@ def create_action(token, data):
 def get_action(token):
    try:
        action = models.get_action(token)
-   except exceptions.ServerErrorException as e:
+       return success_response(action)
+   except ServerErrorException as e:
        return error_response(e.get_dict())
-   return success_response(action)
 
