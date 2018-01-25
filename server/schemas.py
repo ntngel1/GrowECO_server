@@ -6,7 +6,9 @@ class DBSchemas:
         'air_humidity': 0,
         'air_temperature': 0,
         'ground_humidity': 0,
-        'ground_temperature': 0
+        'ground_temperature': 0,
+        'pressure': 0,
+        'water' : 0
     }
 
     DEVICE_SCHEMA = {
