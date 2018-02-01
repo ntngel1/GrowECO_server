@@ -166,10 +166,7 @@ def get_settings(token):
             settings = DBSchemas.create_settings_schema(device['_id'])
             db.settings.insert(settings)
 
-        db.settings.update_one({'device_id': device['_id']}, {'$set':{
-                                                                        'has_updates': False
-                                                                     }
-                                                             })
+        db.settings.update_one({'device_id': device['_id']}, {'$set':{'has_updates': False}})
 
         return settings
     else:

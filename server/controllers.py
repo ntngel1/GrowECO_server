@@ -135,7 +135,8 @@ def get_action(token):
 def get_settings(token):
     try:
         settings = models.get_settings(token)
-        return success_response(settings)
+        response = ResponseDataPreprocessor.get_settings(settings)
+        return success_response(response)
     except ServerErrorException as e:
         return error_response(e.get_dict())
 

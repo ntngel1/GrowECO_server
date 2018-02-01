@@ -129,3 +129,14 @@ class ResponseDataPreprocessor:
             json[field] = data[field]
 
         return json
+
+    @staticmethod
+    def get_settings(data):
+        settings_fields = ['autowatering_threshold', 'autowatering_enabled']
+
+        json = dict()
+
+        for field in device_fields:
+            json[field] = data[field]
+
+        return json
