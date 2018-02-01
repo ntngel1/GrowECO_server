@@ -131,3 +131,27 @@ def get_action(token):
    except ServerErrorException as e:
        return error_response(e.get_dict())
 
+
+def get_settings(token):
+    try:
+        settings = models.get_settings(token)
+        return success_response(settings)
+    except ServerErrorException as e:
+        return error_response(e.get_dict())
+
+
+def update_settings(token, data):
+    update_data = RequestDataPreprocessor.update_settings(data)
+    try:
+        models.update_settings(token, update_data)
+    except ServerErrorException as e:
+        return error_response(e.get_dict())
+    return success_response()
+
+
+def check_settings(token):
+    try:
+        res = models.has_settings_updates(token)
+        return success_response({'has_updates': res})
+    except ServerErrorException as e:
+        return error_response(e.get_dict())

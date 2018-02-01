@@ -156,3 +156,45 @@ def get_action(token):
         return action
     else:
         raise InvalidDeviceTokenException()
+
+
+def get_settings(token):
+    if check_device_exists({'token': token}):
+        device = db.devices.find_one({'token': token})
+        settings = db.settings.find_one({'device_id': device['_id']})
+        if not settings:
+            settings = DBSchemas.create_settings_schema(device['_id'])
+            db.settings.insert(settings)
+
+        db.settings.update_one({'device_id': device['_id']}, {'$set':{
+                                                                        'has_updates': False
+                                                                     }
+                                                             })
+
+        return settings
+    else:
+        raise InvalidDeviceTokenException()
+
+def update_settings(token, data):
+    if check_device_exists({'token': token}):
+        device = db.devices.find_one({'token': token})
+        settings = db.settings.find_one({'device_id': device['_id']})
+        if not settings:
+            settings = DBSchemas.create_settings_schema(device['_id'])
+            db.settings.insert(settings)
+        data['has_updates'] = True
+        db.settings.update_one({'device_id': device['_id']}, {'$set': data})
+    else:
+        raise InvalidDeviceTokenException()
+
+def has_settings_updates(token):
+    if check_device_exists({'token': token}):
+        device = db.devices.find_one({'token': token})
+        settings = db.settings.find_one({'device_id': device['_id']})
+        if not settings:
+            settings = DBSchemas.create_settings_schema(device['_id'])
+            db.settings.insert(settings)
+
+        return settings['has_updates']
+    else:
+        raise InvalidDeviceTokenException()

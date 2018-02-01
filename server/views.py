@@ -63,3 +63,17 @@ def create_action(token):
 def get_action(token):
     return controllers.get_action(token)
 
+
+@app.route('/settings/get/<token>')
+def get_settings(token):
+    return controllers.get_settings(token)
+
+
+@app.route('/settings/update/<token>', methods=['PUT'])
+def update_settings(token):
+    return controllers.update_settings(token, request.get_json())
+
+
+@app.route('/settings/hasUpdates/<token>')
+def check_settings(token):
+    return controllers.check_settings(token)

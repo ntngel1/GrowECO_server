@@ -24,6 +24,12 @@ class DBSchemas:
         'actions': []
     }
 
+    SETTINGS_SCHEMA {
+        'autowatering_enabled': False,
+        'autowatering_threshold': 50,
+        'has_updates': True
+    }
+
     @staticmethod
     def create_sensors_schema(device_id):
         record = DBSchemas.SENSORS_SCHEMA.copy()
@@ -44,6 +50,14 @@ class DBSchemas:
     @staticmethod
     def create_actions_schema(device_id):
         record = DBSchemas.ACTIONS_SCHEMA.copy()
+
+        record['device_id'] = device_id
+
+        return record
+
+    @staticmethod
+    def create_settings_schema(device_id):
+        record = DBSchemas.SETTINGS_SCHEMA.copy()
 
         record['device_id'] = device_id
 

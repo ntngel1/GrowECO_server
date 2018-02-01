@@ -69,6 +69,17 @@ class RequestDataPreprocessor:
 
         return data
 
+    @staticmethod
+    def update_settings(json):
+        settings_fields = ['autowatering_enabled', 'autowatering_threshold']
+
+        data = dict()
+
+        for field in settings_fields:
+            if field in json:
+                data[field] = json[field]
+
+        return data
 
 class ResponseDataPreprocessor:
 
