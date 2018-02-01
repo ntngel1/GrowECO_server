@@ -24,7 +24,7 @@ class DBSchemas:
         'actions': []
     }
 
-    SETTINGS_SCHEMA {
+    SETTINGS_SCHEMA = {
         'autowatering_enabled': False,
         'autowatering_threshold': 50,
         'has_updates': True
