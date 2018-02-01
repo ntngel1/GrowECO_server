@@ -136,7 +136,7 @@ class ResponseDataPreprocessor:
 
         json = dict()
 
-        for field in device_fields:
+        for field in settings_fields:
             json[field] = data[field]
 
         return json
